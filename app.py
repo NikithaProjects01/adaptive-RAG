@@ -12,10 +12,6 @@ import sys
 import streamlit as st
 from dotenv import load_dotenv
 
-from ingest import ingest_pdf
-from rag_pipeline import answer_question
-
-
 load_dotenv()
 
 
@@ -260,6 +256,10 @@ with upload_column:
         if st.button("Process PDF"):
             with st.spinner("Loading, chunking, embedding, and storing PDF..."):
                 try:
+                    # Import here so dependency errors appear inside the UI instead of
+                    # crashing the whole Streamlit app during startup.
+                    from ingest import ingest_pdf
+
                     pdf_path.write_bytes(uploaded_file.getbuffer())
                     chunk_count = ingest_pdf(pdf_path)
                     st.session_state.last_ingested_file = uploaded_file.name
@@ -315,6 +315,10 @@ with chat_column:
     if ask_clicked:
         with st.spinner("Retrieving context and asking Ollama..."):
             try:
+                # Import here so the app shell can still load on cloud hosts even
+                # when local-only RAG dependencies need setup.
+                from rag_pipeline import answer_question
+
                 result = answer_question(question)
 
                 st.markdown("### Answer")
