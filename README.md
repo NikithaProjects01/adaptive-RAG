@@ -1,6 +1,6 @@
 # Simple Adaptive RAG Chatbot
 
-This project is a beginner-friendly, fully local Adaptive RAG chatbot. It lets you upload PDF documents, stores their text in a local ChromaDB vector database, and answers questions using a local Ollama model.
+This project is a beginner-friendly Adaptive RAG chatbot. Locally, it uses Ollama for private local inference. For Streamlit Cloud deployment, it can switch to OpenAI because Streamlit Cloud cannot access Ollama running on your laptop.
 
 ## What Is RAG?
 
@@ -48,6 +48,21 @@ When you ask a question:
 3. ChromaDB runs similarity search.
 4. Retrieved chunks are sent to Ollama.
 5. The answer is shown in Streamlit.
+
+By default, the app uses:
+
+```env
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=llama3
+```
+
+For Streamlit Cloud, use:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
+```
 
 ## Folder Structure
 
@@ -119,6 +134,10 @@ LANGCHAIN_API_KEY=your_langsmith_api_key_here
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=Simple-Adaptive-RAG
 LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=llama3
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 The app also runs without LangSmith if you leave `LANGCHAIN_API_KEY` empty.
@@ -148,9 +167,34 @@ What is Adaptive RAG?
 
 5. Open **Retrieved chunks** to see what context was sent to the local LLM.
 
+## Streamlit Cloud Setup
+
+Ollama runs on your own computer, so Streamlit Cloud cannot connect to it. To make the deployed app answer questions online, set these Streamlit secrets:
+
+```toml
+LLM_PROVIDER = "openai"
+OPENAI_API_KEY = "your_openai_api_key"
+OPENAI_MODEL = "gpt-4o-mini"
+
+LANGCHAIN_TRACING_V2 = "true"
+LANGCHAIN_PROJECT = "Simple-Adaptive-RAG"
+LANGCHAIN_ENDPOINT = "https://api.smith.langchain.com"
+LANGCHAIN_API_KEY = "your_langsmith_api_key"
+```
+
+In Streamlit Cloud:
+
+1. Open the app.
+2. Click **Manage app**.
+3. Open **Secrets**.
+4. Paste the secrets above.
+5. Click **Save**.
+6. Reboot or redeploy the app.
+
 ## Notes
 
 - All document storage is local in `./chroma_db`.
-- All LLM inference uses local Ollama.
+- Local inference uses Ollama.
+- Streamlit Cloud inference needs a cloud LLM provider because local Ollama is not reachable from Streamlit Cloud.
 - This project does not use agents, memory, reranking, hybrid search, or advanced RAG techniques.
 - The goal is to keep Adaptive RAG simple, readable, and educational.

@@ -7,6 +7,7 @@ Run with:
 
 from pathlib import Path
 import importlib.util
+import os
 import sys
 
 import streamlit as st
@@ -165,6 +166,22 @@ def show_friendly_error(error: Exception) -> None:
         st.code("ollama pull llama3", language="powershell")
         return
 
+    if "OPENAI_API_KEY" in error_message:
+        st.markdown(
+            """
+            <div class="error-help">
+            <strong>OpenAI key missing:</strong> add OPENAI_API_KEY in Streamlit
+            Cloud secrets, then redeploy the app.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.code(
+            'LLM_PROVIDER = "openai"\nOPENAI_API_KEY = "your_key_here"\nOPENAI_MODEL = "gpt-4o-mini"',
+            language="toml",
+        )
+        return
+
     st.error(f"Something went wrong: {error_message}")
 
 
@@ -197,7 +214,7 @@ with st.sidebar:
     st.write("Vector DB: ChromaDB")
     st.write("Embeddings: MiniLM-L6-v2")
     st.write("Framework: LangChain")
-    st.caption("Default Ollama model: llama3")
+    st.caption(f"LLM provider: {os.getenv('LLM_PROVIDER', 'ollama')}")
     st.divider()
     st.subheader("Environment")
     st.caption(f"Python: {sys.executable}")
@@ -233,7 +250,7 @@ st.markdown(
         </div>
         <div class="status-card">
             <div class="status-label">Inference</div>
-            <div class="status-value">Local Ollama llama3</div>
+            <div class="status-value">{os.getenv("LLM_PROVIDER", "ollama")}</div>
         </div>
     </div>
     """,

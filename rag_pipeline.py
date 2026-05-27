@@ -11,6 +11,7 @@ The app uses:
 
 from __future__ import annotations
 
+import os
 from typing import Dict, List
 
 from dotenv import load_dotenv
@@ -18,7 +19,6 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
 
 
 # Load .env once when this module is imported.
@@ -28,7 +28,8 @@ load_dotenv()
 
 CHROMA_DB_DIR = "./chroma_db"
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-OLLAMA_MODEL_NAME = "llama3"
+DEFAULT_OLLAMA_MODEL = "llama3"
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 
 
 def get_embeddings() -> HuggingFaceEmbeddings:
@@ -45,9 +46,40 @@ def get_vector_store() -> Chroma:
     )
 
 
-def get_llm() -> ChatOllama:
-    """Create the local Ollama chat model."""
-    return ChatOllama(model=OLLAMA_MODEL_NAME, temperature=0.2)
+def get_llm():
+    """
+    Create the chat model.
+
+    Local mode:
+        LLM_PROVIDER=ollama
+
+    Streamlit Cloud mode:
+        LLM_PROVIDER=openai
+        OPENAI_API_KEY=your_key
+    """
+    provider = os.getenv("LLM_PROVIDER", "ollama").lower()
+
+    if provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY is missing. Add it in Streamlit Cloud secrets "
+                "or your local .env file."
+            )
+
+        from langchain_openai import ChatOpenAI
+
+        model_name = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
+        return ChatOpenAI(model=model_name, temperature=0.2, api_key=api_key)
+
+    if provider == "ollama":
+        from langchain_ollama import ChatOllama
+
+        model_name = os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL)
+        return ChatOllama(model=model_name, temperature=0.2)
+
+    raise ValueError("Unsupported LLM_PROVIDER. Use 'ollama' or 'openai'.")
 
 
 def choose_k(question: str) -> int:
@@ -102,7 +134,7 @@ def format_documents(documents: List[Document]) -> str:
 
 def answer_question(question: str) -> Dict[str, object]:
     """
-    Retrieve relevant chunks with adaptive k and ask Ollama for an answer.
+    Retrieve relevant chunks with adaptive k and ask the selected LLM for an answer.
 
     Returns a dictionary so Streamlit can display the answer, k value,
     and retrieved chunks separately.
